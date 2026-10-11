@@ -258,7 +258,124 @@ def main():
     print("\n" + "=" * 75)
     print("SUCCESS: Pipeline executed completely in Colab!")
     print("=" * 75)
+    return trained_models
+
+
+def predict_in_console(arrival_time: str, queue_length: int, model_name: str, trained_models=None):
+    """
+    Accepts arrival time, queue length, and model name.
+    Calculates waiting time and prints formatted results directly to the console.
+    """
+    import joblib
+    from datetime import datetime, timedelta
+
+    # Load models if not provided
+    if trained_models is None:
+        trained_models = {}
+        for k, fname in [("Random Forest", "random_forest.joblib"),
+                         ("Gradient Boosting", "gradient_boosting.joblib"),
+                         ("XGBoost", "xgboost_model.joblib")]:
+            mpath = ROOT / "models" / fname
+            if mpath.exists():
+                trained_models[k] = joblib.load(mpath)
+
+    # Parse arrival time
+    t_clean = str(arrival_time).strip().replace(".", ":")
+    parts = t_clean.split(":") if ":" in t_clean else [t_clean, "0"]
+    h = int(parts[0]) % 24
+    m = int(parts[1]) % 60 if len(parts) > 1 else 0
+    q = max(1, int(queue_length))
+    ahead = max(0, q - 1)
+
+    inp = pd.DataFrame([{"arrival_hour": h, "arrival_minute": m, "queue_length": q}])
+
+    print("\n" + "=" * 70)
+    print("                    INTELLIQ PREDICTION RESULT                      ")
+    print("=" * 70)
+    print(f"  • Arrival Time        : {h:02d}:{m:02d}")
+    print(f"  • Queue Length        : {q} people ({ahead} people ahead in line)")
+
+    is_compare = any(term in model_name.lower() for term in ["compare", "all", "both", "4"])
+
+    if is_compare:
+        print("  * Mode                : Compare All Three Algorithms Side by Side")
+        print("-" * 70)
+        rf_p = 0.0 if q <= 1 else round(float(trained_models["Random Forest"].predict(inp)[0]), 1)
+        gb_p = 0.0 if q <= 1 else round(float(trained_models["Gradient Boosting"].predict(inp)[0]), 1)
+        xgb_p = 0.0 if q <= 1 else round(float(trained_models["XGBoost"].predict(inp)[0]), 1)
+
+        print(f"  [1] Random Forest        : {rf_p:5.1f} minutes  (Test MAE: 0.190 min)")
+        print(f"  [2] Gradient Boosting    : {gb_p:5.1f} minutes  (Test MAE: 0.143 min)")
+        print(f"  [3] XGBoost Regressor    : {xgb_p:5.1f} minutes  (Test MAE: 0.134 min) [BEST MODEL]")
+        
+        primary_val = xgb_p
+    else:
+        # Resolve model name
+        if "xgb" in model_name.lower() or model_name == "3":
+            algo = "XGBoost"
+            tag = "[XGB]"
+            mae_str = "0.134 min (Top Performer)"
+        elif "gradient" in model_name.lower() or model_name == "2":
+            algo = "Gradient Boosting"
+            tag = "[GB]"
+            mae_str = "0.143 min"
+        else:
+            algo = "Random Forest"
+            tag = "[RF]"
+            mae_str = "0.190 min"
+
+        selected_model = trained_models.get(algo)
+        pred_val = 0.0 if q <= 1 else round(max(0.0, float(selected_model.predict(inp)[0])), 1)
+        primary_val = pred_val
+
+        print(f"  * Algorithm Selected  : {tag} {algo} Regressor")
+        print(f"  * Model Accuracy      : Test MAE = {mae_str}")
+        print("-" * 70)
+        print(f"  >>> PREDICTED WAIT TIME : {pred_val} MINUTES")
+
+    # Estimated service start time
+    base_dt = datetime(2023, 1, 1, h, m)
+    service_dt = base_dt + timedelta(minutes=int(round(primary_val)))
+    service_clock = service_dt.strftime("%I:%M %p")
+    print(f"  >>> ESTIMATED SERVICE AT : {service_clock}")
+    print("=" * 70 + "\n")
+
+
+def interactive_menu(trained_models):
+    """Interactive console prompt for user input in terminal or Colab."""
+    print("\n" + "=" * 70)
+    print("           INTELLIQ INTERACTIVE CONSOLE PREDICTION TOOL           ")
+    print("=" * 70)
+    print("Select an Algorithm:")
+    print("  [1] Random Forest Regressor")
+    print("  [2] Gradient Boosting Regressor")
+    print("  [3] XGBoost Regressor")
+    print("  [4] Compare All Three Models Side by Side")
+
+    choice = input("\nEnter choice (1/2/3/4) [default: 3]: ").strip() or "3"
+    arr_time = input("Enter Arrival Time (e.g. 12:00, 16:47) [default: 12:00]: ").strip() or "12:00"
+    q_len_str = input("Enter Queue Length (e.g. 5, 10, 20) [default: 5]: ").strip() or "5"
+
+    algo_map = {
+        "1": "Random Forest",
+        "2": "Gradient Boosting",
+        "3": "XGBoost",
+        "4": "Compare All Three",
+    }
+    model_name = algo_map.get(choice, "XGBoost")
+    predict_in_console(arr_time, int(q_len_str), model_name, trained_models)
 
 
 if __name__ == "__main__":
-    main()
+    trained_models = main()
+
+    # If --predict flag passed:
+    if "--predict" in sys.argv:
+        # Example: python intelliq_colab_demo.py --predict 12:00 5 XGBoost
+        args = sys.argv[sys.argv.index("--predict") + 1:]
+        t = args[0] if len(args) > 0 else "12:00"
+        q = int(args[1]) if len(args) > 1 else 5
+        m = args[2] if len(args) > 2 else "XGBoost"
+        predict_in_console(t, q, m, trained_models)
+    elif "--interactive" in sys.argv:
+        interactive_menu(trained_models)
