@@ -1,0 +1,30 @@
+{
+  "rows_total": 1567,
+  "train_rows": 1253,
+  "test_rows": 314,
+  "features": [
+    "arrival_hour",
+    "arrival_minute",
+    "queue_length"
+  ],
+  "metrics": [
+    {
+      "Model": "Random Forest",
+      "MAE (minutes)": 0.19,
+      "RMSE (minutes)": 0.291,
+      "R2 Score": 1.0
+    },
+    {
+      "Model": "Gradient Boosting",
+      "MAE (minutes)": 0.143,
+      "RMSE (minutes)": 0.19,
+      "R2 Score": 1.0
+    },
+    {
+      "Model": "XGBoost",
+      "MAE (minutes)": 0.134,
+      "RMSE (minutes)": 0.179,
+      "R2 Score": 1.0
+    }
+  ]
+}

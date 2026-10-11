@@ -1,0 +1,6 @@
+            Model  MAE (minutes)  RMSE (minutes)  R2 Score
+    Random Forest          0.190           0.291       1.0
+Gradient Boosting          0.143           0.190       1.0
+          XGBoost          0.134           0.179       1.0
+
+Rows used: 1567 | Train: 1253 | Test: 314

@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IntelliQ — Queue Waiting Time Prediction</title>
+  <meta name="description" content="IntelliQ predicts customer waiting time for DMart & Supermarkets using trained Machine Learning models (Random Forest, Gradient Boosting & XGBoost).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .app-card {
+      background: #ffffff;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 440px;
+      padding: 26px 24px 28px;
+      box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+      border: 1px solid #e2e8f0;
+      transition: all 0.25s ease;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      padding-bottom: 12px;
+    }
+
+    .header-center {
+      text-align: center;
+      flex: 1;
+    }
+
+    .app-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    .app-subtitle {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 3px;
+    }
+
+    .app-tagline {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .icon-box {
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+
+    .store-badge {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #2563eb;
+    }
+
+    /* ── Form ───────────────────────────────────────────── */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .input-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 7px;
+    }
+
+    .input-label svg {
+      width: 16px;
+      height: 16px;
+      color: #475569;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper .prefix-icon {
+      position: absolute;
+      left: 14px;
+      width: 17px;
+      height: 17px;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+
+    .input-wrapper .suffix-icon {
+      position: absolute;
+      right: 14px;
+      width: 17px;
+      height: 17px;
+      color: #64748b;
+      pointer-events: none;
+    }
+
+    .form-control {
+      width: 100%;
+      height: 44px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-family: inherit;
+      color: #0f172a;
+      background: #ffffff;
+      padding: 0 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .form-control.has-prefix {
+      padding-left: 40px;
+    }
+
+    .form-control.has-suffix {
+      padding-right: 40px;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    select.form-control {
+      appearance: none;
+      cursor: pointer;
+      padding-right: 36px;
+      font-weight: 500;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 16px;
+    }
+
+    /* ── Predict Button ─────────────────────────────────── */
+    .btn-predict {
+      width: 100%;
+      height: 46px;
+      background: #1d4ed8;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.1s, box-shadow 0.18s;
+      box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+      margin-top: 4px;
+      margin-bottom: 20px;
+    }
+
+    .btn-predict:hover {
+      background: #1e40af;
+      box-shadow: 0 6px 16px rgba(29, 78, 216, 0.32);
+    }
+
+    .btn-predict:active {
+      transform: translateY(1px);
+    }
+
+    .btn-predict:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* ── Empty State ────────────────────────────────────── */
+    .empty-state-box {
+      border: 2px dashed #bfdbfe;
+      border-radius: 14px;
+      background: #f8faff;
+      padding: 28px 16px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .cart-sparkle-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .empty-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .empty-desc {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+
+    /* ── Tip Box ────────────────────────────────────────── */
+    .tip-box {
+      background: #f0f7ff;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .tip-icon {
+      color: #2563eb;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .tip-text {
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.45;
+    }
+
+    .tip-text strong {
+      color: #1d4ed8;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    /* ── Active Result State ────────────────────────────── */
+    .result-container {
+      display: none;
+    }
+
+    .result-container.active {
+      display: block;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Result Card (Green / Red Themes) */
+    .prediction-card {
+      border-radius: 14px;
+      padding: 16px 18px 18px;
+      margin-bottom: 14px;
+      transition: all 0.25s ease;
+    }
+
+    /* Green Theme (Default / Low wait / Random Forest) */
+    .prediction-card.theme-green {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+
+    .prediction-card.theme-green .pred-header-title {
+      color: #16a34a;
+    }
+
+    .prediction-card.theme-green .model-pill {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .prediction-card.theme-green .pred-time-value {
+      color: #15803d;
+    }
+
+    .prediction-card.theme-green .range-pill {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    /* Red / Coral Theme (High wait / Gradient Boosting) */
+    .prediction-card.theme-red {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+    }
+
+    .prediction-card.theme-red .pred-header-title {
+      color: #dc2626;
+    }
+
+    .prediction-card.theme-red .model-pill {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .prediction-card.theme-red .pred-time-value {
+      color: #b91c1c;
+    }
+
+    .prediction-card.theme-red .range-pill {
+      background: #ffe4e6;
+      color: #9f1239;
+    }
+
+    /* Blue / Indigo Theme (XGBoost) */
+    .prediction-card.theme-blue {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+
+    .prediction-card.theme-blue .pred-header-title {
+      color: #2563eb;
+    }
+
+    .prediction-card.theme-blue .model-pill {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .prediction-card.theme-blue .pred-time-value {
+      color: #1d4ed8;
+    }
+
+    .prediction-card.theme-blue .range-pill {
+      background: #e0e7ff;
+      color: #4338ca;
+    }
+
+    /* Comparison Container Grid */
+    .comparison-container {
+      margin-bottom: 14px;
+    }
+
+    .comparison-header {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #475569;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .compare-card {
+      border-radius: 12px;
+      padding: 11px 6px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .compare-card-rf {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+
+    .compare-card-gb {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+    }
+
+    .compare-card-xgb {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+    }
+
+    .compare-card-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .compare-card-rf .compare-card-title { color: #15803d; }
+    .compare-card-gb .compare-card-title { color: #b91c1c; }
+    .compare-card-xgb .compare-card-title { color: #1d4ed8; }
+
+    .compare-card-val {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .compare-card-rf .compare-card-val { color: #15803d; }
+    .compare-card-gb .compare-card-val { color: #b91c1c; }
+    .compare-card-xgb .compare-card-val { color: #1d4ed8; }
+
+    .compare-card-badge {
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+
+    .compare-card-rf .compare-card-badge { background: #dcfce7; color: #166534; }
+    .compare-card-gb .compare-card-badge { background: #fee2e2; color: #991b1b; }
+    .compare-card-xgb .compare-card-badge { background: #dbeafe; color: #1e40af; }
+
+    .pred-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .pred-header-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .model-pill {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pred-time-value {
+      font-size: 34px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .range-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 11px;
+      border-radius: 20px;
+    }
+
+    /* ── Stats 3-Col Grid ───────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 9px;
+      margin-bottom: 14px;
+    }
+
+    .stat-card {
+      border-radius: 12px;
+      padding: 12px 6px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-card-blue {
+      background: #f0f7ff;
+      border: 1px solid #dbeafe;
+    }
+
+    .stat-card-purple {
+      background: #f5f3ff;
+      border: 1px solid #ede9fe;
+    }
+
+    .stat-card-amber {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+    }
+
+    .stat-icon {
+      width: 20px;
+      height: 20px;
+      margin-bottom: 4px;
+    }
+
+    .stat-card-blue .stat-icon { color: #2563eb; }
+    .stat-card-purple .stat-icon { color: #8b5cf6; }
+    .stat-card-amber .stat-icon { color: #f59e0b; }
+
+    .stat-title {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #475569;
+      line-height: 1.25;
+      min-height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-value {
+      font-size: 19px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 3px 0 1px;
+      letter-spacing: -0.3px;
+    }
+
+    .stat-value.text-sm {
+      font-size: 14.5px;
+    }
+
+    .stat-sub {
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    /* ── Queue Status Card ──────────────────────────────── */
+    .queue-status-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 13px 15px;
+    }
+
+    .queue-status-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 11px;
+    }
+
+    .queue-header-left {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .queue-header-right {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .queue-avatars-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px 6px;
+      align-items: center;
+    }
+
+    .person-avatar {
+      width: 14px;
+      height: 18px;
+      transition: all 0.2s;
+    }
+
+    .person-avatar.active {
+      color: #0284c7;
+    }
+
+    .person-avatar.inactive {
+      color: #cbd5e1;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-card">
+
+    <!-- ── Header ────────────────────────────────────────── -->
+    <header class="header-row">
+      <!-- Shopping Cart with Groceries SVG -->
+      <div class="icon-box">
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Groceries inside -->
+          <circle cx="21" cy="15" r="5" fill="#f59e0b"/>
+          <path d="M26 12C26 9.5 28 8 30 8C32 8 34 9.5 34 12C34 14.5 32 16 30 16C28 16 26 14.5 26 12Z" fill="#10b981"/>
+          <circle cx="17" cy="18" r="4" fill="#ef4444"/>
+          <!-- Cart Frame -->
+          <path d="M6 10H11L15.5 28H35L39 14H14" stroke="#1d4ed8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="18" cy="34" r="3.2" fill="#1d4ed8"/>
+          <circle cx="33" cy="34" r="3.2" fill="#1d4ed8"/>
+        </svg>
+      </div>
+
+      <div class="header-center">
+        <h1 class="app-title">IntelliQ</h1>
+        <div class="app-subtitle">Queue Waiting Time Prediction</div>
+        <div class="app-tagline">for DMart & Supermarkets</div>
+      </div>
+
+      <!-- Storefront Badge SVG -->
+      <div class="icon-box store-badge">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+    </header>
+
+    <!-- ── Form Inputs ───────────────────────────────────── -->
+    <form id="predictForm" onsubmit="handlePredict(event)">
+
+      <!-- Arrival Time -->
+      <div class="form-group">
+        <label class="input-label" for="arrivalTime">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Arrival Time
+        </label>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="arrivalTime"
+            class="form-control has-suffix"
+            value="12:00"
+            placeholder="HH : MM"
+            required
+            pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+            title="Please enter valid time in HH:MM format (e.g. 12:00 or 16:47)"
+          />
+          <svg class="suffix-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Queue Length -->
+      <div class="form-group">
+        <label class="input-label" for="queueLength">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Queue Length (number of people)
+        </label>
+        <div class="input-wrapper">
+          <svg class="prefix-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input
+            type="number"
+            id="queueLength"
+            class="form-control has-prefix"
+            placeholder="Enter number of people"
+            value="5"
+            min="1"
+            max="100"
+            required
+          />
+        </div>
+      </div>
+
+      <!-- Model Selection -->
+      <div class="form-group">
+        <label class="input-label" for="modelSelection">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Model Selection
+        </label>
+        <select id="modelSelection" class="form-control" onchange="handleModelChange()">
+          <option value="Random Forest" selected>Random Forest</option>
+          <option value="Gradient Boosting">Gradient Boosting</option>
+          <option value="XGBoost">XGBoost</option>
+          <option value="Compare All Three Models">Compare All Three Models</option>
+        </select>
+      </div>
+
+      <!-- Predict Button -->
+      <button type="submit" id="btnSubmit" class="btn-predict">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        Predict Waiting Time
+      </button>
+
+    </form>
+
+    <!-- ── State 1: Empty / Initial Container ────────────── -->
+    <div id="emptyContainer">
+      <div class="empty-state-box">
+        <div class="cart-sparkle-icon">
+          <svg width="54" height="54" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Sparkles -->
+            <path d="M16 14L17.5 10L19 14L23 15.5L19 17L17.5 21L16 17L12 15.5L16 14Z" fill="#60a5fa"/>
+            <path d="M48 18L49 15L50 18L53 19L50 20L49 23L48 20L45 19L48 18Z" fill="#93c5fd"/>
+            <circle cx="13" cy="28" r="2" fill="#93c5fd"/>
+            <circle cx="51" cy="30" r="2.5" fill="#60a5fa"/>
+            <!-- Cart -->
+            <path d="M14 24H20L25 42H48L53 28H23" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="28" cy="48" r="3.5" fill="#2563eb"/>
+            <circle cx="45" cy="48" r="3.5" fill="#2563eb"/>
+            <!-- Groceries -->
+            <circle cx="31" cy="27" r="4" fill="#f59e0b"/>
+            <circle cx="40" cy="26" r="3.5" fill="#ef4444"/>
+            <path d="M34 23C34 20 37 19 39 21C40 23 38 25 36 25Z" fill="#10b981"/>
+          </svg>
+        </div>
+        <div class="empty-title">Enter arrival time and queue length</div>
+        <div class="empty-desc">to get the estimated waiting time for DMart & Supermarkets.</div>
+      </div>
+
+      <div class="tip-box">
+        <svg class="tip-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"/>
+        </svg>
+        <div class="tip-text">
+          <strong>Tip</strong> Current queue length includes people waiting at the billing counters.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── State 2 & 3: Active Result Container ──────────── -->
+    <div id="resultContainer" class="result-container">
+
+      <!-- Main Prediction Card (Theme swaps dynamically) -->
+      <div id="predictionCard" class="prediction-card theme-green">
+        <div class="pred-card-header">
+          <span class="pred-header-title">PREDICTED WAITING TIME</span>
+          <span id="modelBadge" class="model-pill">
+            <span id="modelIcon">🌲</span> <span id="modelNameText">Random Forest</span>
+          </span>
+        </div>
+
+        <div id="predictedTimeText" class="pred-time-value">6.8 minutes</div>
+
+        <div id="rangePill" class="range-pill">
+          Approximately <span id="rangeText">5 – 9 minutes</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Side-by-side comparison (active when Compare All Three Models is selected) -->
+      <div id="comparisonContainer" class="comparison-container" style="display: none;">
+        <div class="comparison-header">
+          <span>ALL THREE MODELS (SIDE BY SIDE)</span>
+          <span style="font-size: 10px; color: #2563eb; font-weight: 700;">★ XGBoost Best</span>
+        </div>
+        <div class="comparison-grid">
+          <div class="compare-card compare-card-rf">
+            <div class="compare-card-title">🌲 Random Forest</div>
+            <div id="compRfVal" class="compare-card-val">6.8 min</div>
+            <span class="compare-card-badge">MAE 0.190</span>
+          </div>
+          <div class="compare-card compare-card-gb">
+            <div class="compare-card-title">📊 Gradient Boost</div>
+            <div id="compGbVal" class="compare-card-val">6.9 min</div>
+            <span class="compare-card-badge">MAE 0.143</span>
+          </div>
+          <div class="compare-card compare-card-xgb">
+            <div class="compare-card-title">🚀 XGBoost</div>
+            <div id="compXgbVal" class="compare-card-val">6.9 min</div>
+            <span class="compare-card-badge">MAE 0.134</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-Column Stats Grid -->
+      <div class="stats-grid">
+
+        <!-- Card 1: People Ahead -->
+        <div class="stat-card stat-card-blue">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+          <div class="stat-title">People Ahead<br>of You</div>
+          <div id="statPeopleAhead" class="stat-value">4</div>
+          <div class="stat-sub">in queue</div>
+        </div>
+
+        <!-- Card 2: Expected Service Time -->
+        <div class="stat-card stat-card-purple">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <div class="stat-title">Expected Service<br>Time</div>
+          <div id="statServiceTime" class="stat-value text-sm">12:07 PM</div>
+          <div class="stat-sub">(estimated)</div>
+        </div>
+
+        <!-- Card 3: Model Confidence -->
+        <div class="stat-card stat-card-amber">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="6"/>
+            <circle cx="12" cy="12" r="2"/>
+          </svg>
+          <div class="stat-title">Model<br>Confidence</div>
+          <div id="statConfidence" class="stat-value">87%</div>
+          <div class="stat-sub">(based on test data)</div>
+        </div>
+
+      </div>
+
+      <!-- Current Queue Status Card with Silhouette Avatars -->
+      <div class="queue-status-card">
+        <div class="queue-status-header">
+          <span class="queue-header-left">Current Queue Status</span>
+          <span id="queueCountLabel" class="queue-header-right">5 people currently waiting</span>
+        </div>
+        <div id="queueAvatarsGrid" class="queue-avatars-grid">
+          <!-- Filled dynamically by JavaScript -->
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer-note">
+      IntelliQ ML Engine • Random Forest, Gradient Boosting &amp; XGBoost
+    </div>
+
+  </div>
+
+  <script>
+    // SVG Person Avatar icon helper
+    const personSvg = (isActive) => `
+      <svg class="person-avatar ${isActive ? 'active' : 'inactive'}" viewBox="0 0 24 32" fill="currentColor">
+        <circle cx="12" cy="6" r="5"/>
+        <path d="M4 28c0-5 3.5-9 8-9s8 4 8 9v2H4v-2z"/>
+      </svg>
+    `;
+
+    function renderAvatars(count) {
+      const grid = document.getElementById("queueAvatarsGrid");
+      grid.innerHTML = "";
+      
+      const numPeople = Math.max(1, parseInt(count) || 1);
+
+      if (numPeople <= 10) {
+        // Show 10 slots: numPeople active, remainder inactive (matching mockup 1)
+        for (let i = 0; i < numPeople; i++) {
+          grid.innerHTML += personSvg(true);
+        }
+        for (let i = numPeople; i < 10; i++) {
+          grid.innerHTML += personSvg(false);
+        }
+      } else {
+        // When > 10, show all active people up to 20 or actual count (matching mockup 2)
+        const showCount = Math.min(numPeople, 30);
+        for (let i = 0; i < showCount; i++) {
+          grid.innerHTML += personSvg(true);
+        }
+      }
+    }
+
+    function handleModelChange() {
+      // If result is already visible, optionally re-run prediction seamlessly
+      const resultContainer = document.getElementById("resultContainer");
+      if (resultContainer.classList.contains("active")) {
+        triggerPrediction();
+      }
+    }
+
+    async function handlePredict(e) {
+      if (e) e.preventDefault();
+      await triggerPrediction();
+    }
+
+    async function triggerPrediction() {
+      const arrivalTime = document.getElementById("arrivalTime").value.trim();
+      const queueLength = parseInt(document.getElementById("queueLength").value) || 1;
+      const model = document.getElementById("modelSelection").value;
+      const btn = document.getElementById("btnSubmit");
+
+      btn.disabled = true;
+      btn.innerText = "Calculating...";
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            arrival_time: arrivalTime,
+            queue_length: queueLength,
+            model: model
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          alert(data.error || "An error occurred during prediction.");
+          return;
+        }
+
+        displayResult(data);
+
+      } catch (err) {
+        console.error("Prediction error:", err);
+        alert("Failed to connect to backend server.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          Predict Waiting Time
+        `;
+      }
+    }
+
+    function displayResult(data) {
+      // Hide empty container, show result container
+      document.getElementById("emptyContainer").style.display = "none";
+      const resultContainer = document.getElementById("resultContainer");
+      resultContainer.classList.add("active");
+
+      const card = document.getElementById("predictionCard");
+      const modelBadge = document.getElementById("modelBadge");
+      const modelIcon = document.getElementById("modelIcon");
+      const modelNameText = document.getElementById("modelNameText");
+      const predTimeText = document.getElementById("predictedTimeText");
+      const rangeText = document.getElementById("rangeText");
+      const compContainer = document.getElementById("comparisonContainer");
+
+      if (data.is_comparison && data.predictions) {
+        // Show side-by-side comparison container
+        compContainer.style.display = "block";
+        document.getElementById("compRfVal").textContent = `${data.predictions.random_forest} min`;
+        document.getElementById("compGbVal").textContent = `${data.predictions.gradient_boosting} min`;
+        document.getElementById("compXgbVal").textContent = `${data.predictions.xgboost} min`;
+
+        card.className = "prediction-card theme-blue";
+        modelIcon.textContent = "⚡";
+        modelNameText.textContent = "All 3 Models (XGBoost Best)";
+        predTimeText.textContent = `${data.prediction} minutes`;
+      } else {
+        // Hide comparison container for individual model selection
+        compContainer.style.display = "none";
+
+        const modelName = data.model || "";
+        if (modelName === "XGBoost") {
+          card.className = "prediction-card theme-blue";
+          modelIcon.textContent = "🚀";
+          modelNameText.textContent = "XGBoost";
+        } else if (modelName === "Gradient Boosting") {
+          card.className = "prediction-card theme-red";
+          modelIcon.textContent = "📊";
+          modelNameText.textContent = "Gradient Boosting";
+        } else {
+          card.className = "prediction-card theme-green";
+          modelIcon.textContent = "🌲";
+          modelNameText.textContent = "Random Forest";
+        }
+
+        // Main prediction number
+        predTimeText.textContent = `${data.prediction} minutes`;
+      }
+
+      // Range text
+      rangeText.textContent = `${data.range_min} – ${data.range_max} minutes`;
+
+      // 3 Stat cards
+      document.getElementById("statPeopleAhead").textContent = data.people_ahead;
+      document.getElementById("statServiceTime").textContent = data.service_time_short || data.expected_service_time;
+      document.getElementById("statConfidence").textContent = `${data.confidence}%`;
+
+      // Queue status
+      document.getElementById("queueCountLabel").textContent = `${data.queue_length} people currently waiting`;
+      renderAvatars(data.queue_length);
+    }
+
+    // Auto-sync arrival time with input if changed
+    document.getElementById("queueLength").addEventListener("input", function() {
+      if (parseInt(this.value) < 1) this.value = 1;
+    });
+  </script>
+</body>
+</html>
